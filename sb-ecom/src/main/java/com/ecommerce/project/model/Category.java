@@ -1,10 +1,13 @@
 package com.ecommerce.project.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.NonNull;
+import jakarta.validation.constraints.NotBlank;
+
+
 
 @Entity(name = "categories")
 @Data
@@ -16,7 +19,9 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long categoryId;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(min = 5, message = "Category Name must contain at least 5 character")
+    @Column(unique = true, nullable = false)
     private String categoryName;
 
 }
