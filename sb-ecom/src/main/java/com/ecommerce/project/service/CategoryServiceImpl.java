@@ -1,5 +1,7 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exceptions.DuplicateResourceException;
+import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,27 +26,40 @@ public class CategoryServiceImpl implements  CategoryService {
     }
 
     @Override
-    public void CreateCategory(Category category) {
+    public void createCategory(Category category) {
+        Category existing = categoryRepository.findByCategoryName(category.getCategoryName());
+        if (existing != null) {
+            throw new DuplicateResourceException("Category", "name", category.getCategoryName());
+        }
         categoryRepository.save(category);
-
     }
+
 
     @Override
     public String deleteCategory(long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
         categoryRepository.deleteById(categoryId);
         return "Category with ID " + categoryId + " deleted successfully";
     }
 
-
     @Override
     public Category updateCategory(Category category, Long categoryId) {
-        Category savedCategory = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException
-                        (HttpStatus.NOT_FOUND, "resource not found"));
-        category.setCategoryId(categoryId);
-        savedCategory  = categoryRepository.save(category);
-        return savedCategory;
+        Category existing = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
+        String newName = category.getCategoryName();
+        if (!existing.getCategoryName().equals(newName)) {
+            Category other = categoryRepository.findByCategoryName(newName);
+            if (other != null) {
+                throw new DuplicateResourceException(
+                        "Category",
+                        "name",
+                        newName
+                );
+            }
+        }
+        existing.setCategoryName(newName);
+        return categoryRepository.save(existing);
     }
+
 }
