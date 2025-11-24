@@ -9,7 +9,8 @@ import jakarta.validation.constraints.NotBlank;
 
 
 
-@Entity(name = "categories")
+@Entity
+@Table(name = "categories", uniqueConstraints = @UniqueConstraint(columnNames = "category_name"))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,10 +20,8 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long categoryId;
 
+    @Column(name = "category_name", nullable = false, unique = true)
     @NotBlank
-    @Size(min = 5, message = "Category Name must contain at least 5 character")
-    @Column(unique = true, nullable = false)
+    @Size(min = 5, message = "Category name must contain at least 5 characters")
     private String categoryName;
-
 }
- 
