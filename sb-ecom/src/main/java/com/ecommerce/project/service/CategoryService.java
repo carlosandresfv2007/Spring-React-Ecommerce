@@ -3,6 +3,7 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.dto.category.CreateCategoryRequest;
 import com.ecommerce.project.dto.category.CategoryResponse;
 import com.ecommerce.project.dto.category.PagedCategoryResponse;
+import com.ecommerce.project.dto.category.UpdateCategoryRequest;
 import com.ecommerce.project.model.Category;
 
 public interface CategoryService {
@@ -11,7 +12,7 @@ public interface CategoryService {
     CategoryResponse createCategory(CreateCategoryRequest request);
 
 
-    String deleteCategory(long categoryId);
+    void deleteCategory(long categoryId);
 
-    Category updateCategory(CreateCategoryRequest category, Long categoryId);
+    CategoryResponse updateCategory(UpdateCategoryRequest category, Long categoryId);
 }
