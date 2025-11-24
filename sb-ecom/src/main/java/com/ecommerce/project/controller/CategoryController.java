@@ -3,6 +3,7 @@ package com.ecommerce.project.controller;
 import com.ecommerce.project.dto.category.CreateCategoryRequest;
 import com.ecommerce.project.dto.category.CategoryResponse;
 import com.ecommerce.project.dto.category.PagedCategoryResponse;
+import com.ecommerce.project.dto.category.UpdateCategoryRequest;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.service.CategoryService;
 import jakarta.validation.Valid;
@@ -38,14 +39,14 @@ public class CategoryController {
 
 
     @DeleteMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<String> deleteCategory(@PathVariable long  categoryId) {
-            String status = categoryService.deleteCategory(categoryId);
-            return new ResponseEntity<>(status, HttpStatus.OK);
-
+    public ResponseEntity<Void> deleteCategory(@PathVariable long categoryId) {
+        categoryService.deleteCategory(categoryId);
+        return ResponseEntity.noContent().build();
     }
+
     @PutMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<String> updateCategory(@RequestBody CreateCategoryRequest request, @PathVariable long  categoryId) {
-            Category savedCategory = categoryService.updateCategory(request, categoryId);
+    public ResponseEntity<String> updateCategory(@RequestBody UpdateCategoryRequest request, @PathVariable long  categoryId) {
+            CategoryResponse savedCategory = categoryService.updateCategory(request, categoryId);
             return new ResponseEntity<>("Category updated succesfully with id: " + categoryId, HttpStatus.OK);
 
     }

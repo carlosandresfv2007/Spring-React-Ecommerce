@@ -1,9 +1,6 @@
 package com.ecommerce.project.service;
 
-import com.ecommerce.project.dto.category.CreateCategoryRequest;
-import com.ecommerce.project.dto.category.CategoryResponse;
-import com.ecommerce.project.dto.category.PagedCategoryResponse;
-import com.ecommerce.project.dto.category.CategoryRequest;
+import com.ecommerce.project.dto.category.*;
 import com.ecommerce.project.exceptions.DuplicateResourceException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
@@ -26,13 +23,17 @@ public class CategoryServiceImpl implements  CategoryService {
     @Override
     public PagedCategoryResponse getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
-        if(categories.isEmpty()) throw new ResourceNotFoundException();
-        List<CategoryRequest> categoriesRequest = categories.stream()
-                .map(category -> modelMapper.map(category, CategoryResponse.class));
-        PagedCategoryResponse pagedCategoryResponse = new PagedCategoryResponse();
-        pagedCategoryResponse.setContent(categoriesRequest);
-        return pagedCategoryResponse;
+        if (categories.isEmpty()) {throw new ResourceNotFoundException();}
+        // Map Category → CategoryRequest
+        List<CategoryRequest> categoryDtos = categories.stream()
+                .map(category -> modelMapper.map(category, CategoryRequest.class))
+                .toList();
+        // Wrap in PagedCategoryResponse
+        PagedCategoryResponse response = new PagedCategoryResponse();
+        response.setContent(categoryDtos);
+        return response;
     }
+
 
     @Override
     public CategoryResponse createCategory(CreateCategoryRequest request) {
@@ -51,27 +52,33 @@ public class CategoryServiceImpl implements  CategoryService {
         return response;
     }
 
-
-
     @Override
-    public String deleteCategory(long categoryId) {
+    public void deleteCategory(long categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
-        categoryRepository.deleteById(categoryId);
-        return "Category with ID " + categoryId + " deleted successfully";
+
+        categoryRepository.delete(category);
     }
 
+
     @Override
-    public Category updateCategory(CreateCategoryRequest request, Long categoryId) {
+    public CategoryResponse updateCategory(UpdateCategoryRequest request, Long categoryId) {
+        // 1. Find existing category
         Category existing = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
         String newName = request.getName();
-        if (!existing.getCategoryName().equals(newName)) {
-            Optional<Category> other = categoryRepository.findByCategoryName(newName);
-            if (other.isPresent()) throw new DuplicateResourceException("Category", "name", newName);
+        // 2. Validate duplicate name only if the name has changed
+        if (!existing.getCategoryName().equalsIgnoreCase(newName)) {
+            categoryRepository.findByCategoryName(newName)
+                    .ifPresent(c -> {
+                        throw new DuplicateResourceException("Category", "name", newName);
+                    });
         }
+        // 3. Update value
         existing.setCategoryName(newName);
-        return categoryRepository.save(existing);
+        // 4. Save and map to DTO
+        Category saved = categoryRepository.save(existing);
+        return modelMapper.map(saved, CategoryResponse.class);
     }
 
 }
