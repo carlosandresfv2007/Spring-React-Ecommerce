@@ -7,10 +7,13 @@ import com.ecommerce.project.model.Category;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CategoryServiceImpl implements  CategoryService {
@@ -21,61 +24,71 @@ public class CategoryServiceImpl implements  CategoryService {
     private ModelMapper modelMapper;
 
     @Override
-    public PagedCategoryResponse getAllCategories() {
-        List<Category> categories = categoryRepository.findAll();
-        if (categories.isEmpty()) {throw new ResourceNotFoundException();}
-        // Map Category → CategoryRequest
-        List<CategoryRequest> categoryDtos = categories.stream()
-                .map(category -> modelMapper.map(category, CategoryRequest.class))
+    public PagedCategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        Sort.Direction direction = Sort.Direction.fromString(sortOrder);
+        Sort sortByAndOrder = Sort.by(direction, sortBy);
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
+        Page<Category> categoryPage = categoryRepository.findAll(pageDetails);
+
+        List<CategoryResponse> categoryDtos = categoryPage.getContent()
+                .stream()
+                .map(category -> modelMapper.map(category, CategoryResponse.class))
                 .toList();
-        // Wrap in PagedCategoryResponse
-        PagedCategoryResponse response = new PagedCategoryResponse();
-        response.setContent(categoryDtos);
-        return response;
+        return new PagedCategoryResponse(
+                categoryDtos,
+                pageDetails.getPageNumber(),
+                pageDetails.getPageSize(),
+                categoryPage.getTotalElements(),
+                categoryPage.getTotalPages(),
+                categoryPage.isLast()
+        );
     }
+
 
 
     @Override
     public CategoryResponse createCategory(CreateCategoryRequest request) {
-        categoryRepository.findByCategoryName(request.getName())
+        categoryRepository.findByName(request.getName())
                 .ifPresent(c -> {
                     throw new DuplicateResourceException("Category", "name", request.getName());
                 });
         Category category = new Category();
-        category.setCategoryName(request.getName());
+        category.setName(request.getName());
         // 3. Save
         Category saved = categoryRepository.save(category);
         // 4. Map entity → response
         CategoryResponse response = new CategoryResponse();
-        response.setId(saved.getCategoryId());
-        response.setName(saved.getCategoryName());
+        response.setId(saved.getId());
+        response.setName(saved.getName());
         return response;
     }
 
     @Override
-    public void deleteCategory(long categoryId) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
+    public void deleteCategory(long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 
         categoryRepository.delete(category);
     }
 
 
     @Override
-    public CategoryResponse updateCategory(UpdateCategoryRequest request, Long categoryId) {
+    public CategoryResponse updateCategory(UpdateCategoryRequest request, Long id) {
         // 1. Find existing category
-        Category existing = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
+        Category existing = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
         String newName = request.getName();
         // 2. Validate duplicate name only if the name has changed
-        if (!existing.getCategoryName().equalsIgnoreCase(newName)) {
-            categoryRepository.findByCategoryName(newName)
+        if (!existing.getName().equalsIgnoreCase(newName)) {
+            categoryRepository.findByName(newName)
                     .ifPresent(c -> {
                         throw new DuplicateResourceException("Category", "name", newName);
                     });
         }
         // 3. Update value
-        existing.setCategoryName(newName);
+        existing.setName(newName);
         // 4. Save and map to DTO
         Category saved = categoryRepository.save(existing);
         return modelMapper.map(saved, CategoryResponse.class);

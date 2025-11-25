@@ -1,10 +1,10 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.config.AppConstants;
 import com.ecommerce.project.dto.category.CreateCategoryRequest;
 import com.ecommerce.project.dto.category.CategoryResponse;
 import com.ecommerce.project.dto.category.PagedCategoryResponse;
 import com.ecommerce.project.dto.category.UpdateCategoryRequest;
-import com.ecommerce.project.model.Category;
 import com.ecommerce.project.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,41 +13,44 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/categories")
 public class CategoryController {
-    @Autowired
-    private CategoryService categoryService;
+
+    private final CategoryService categoryService;
 
     public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
-
-    @GetMapping("/public/categories")
-    //@RequestMapping(value = "/public/categories", method = RequestMethod.GET)
-    public ResponseEntity<PagedCategoryResponse> getAllCategoryEntities() {
-        PagedCategoryResponse pagedCategoryResponse = categoryService.getAllCategories();
-        return new ResponseEntity<>(pagedCategoryResponse, HttpStatus.OK);
+    // PUBLIC GET
+    @GetMapping
+    public ResponseEntity<PagedCategoryResponse> getAllCategories(
+            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
+            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
+            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_CATEGORIES_BY, required = false) String sortBy,
+            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder
+    ) {
+        return ResponseEntity.ok(categoryService.getAllCategories(pageNumber, pageSize, sortBy, sortOrder));
     }
-
-    @PostMapping("/admin/categories")
+    // CREATE
+    @PostMapping("/admin")
     public ResponseEntity<CategoryResponse> createCategory(
             @Valid @RequestBody CreateCategoryRequest request) {
 
         CategoryResponse response = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-
-    @DeleteMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable long categoryId) {
-        categoryService.deleteCategory(categoryId);
+    // DELETE
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable long id) {
+        categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
-
-    @PutMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<String> updateCategory(@RequestBody UpdateCategoryRequest request, @PathVariable long  categoryId) {
-            CategoryResponse savedCategory = categoryService.updateCategory(request, categoryId);
-            return new ResponseEntity<>("Category updated succesfully with id: " + categoryId, HttpStatus.OK);
-
+    // UPDATE
+    @PutMapping("/admin/{id}")
+    public ResponseEntity<CategoryResponse> updateCategory(
+            @Valid @RequestBody UpdateCategoryRequest request,
+            @PathVariable long id) {
+        CategoryResponse updated = categoryService.updateCategory(request, id);
+        return ResponseEntity.ok(updated);
     }
 }
