@@ -1,24 +1,14 @@
-package com.ecommerce.project.model;
+package com.ecommerce.project.dto.product;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Entity
-@Table(name = "products")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-
-public class Product {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+@NoArgsConstructor
+public class UpdateProductRequest {
     @NotBlank
     @Size(min = 3, max = 100)
     private String name;
@@ -36,18 +26,7 @@ public class Product {
     private Double price;
 
     @NotNull
-    @Positive
-    private Double specialPrice;
-
-    @NotNull
     @Min(0)
     @Max(100)
     private Double discount;
-
-    private String image;
-
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
-
 }
