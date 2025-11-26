@@ -18,9 +18,6 @@ public class CreateProductRequest {
     @NotBlank
     private String description;
 
-    @NotBlank
-    private String image;
-
     @Positive
     private double price;
 
